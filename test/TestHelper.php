@@ -16,3 +16,13 @@ class TestCase extends PHPUnit_Framework_TestCase
 		return $this->matchesRegularExpression("/$regexp/ism");
 	}
 }
+
+class MockPDO extends PDO 
+{
+	public function __construct() {}
+}
+
+class MockPDOStatement extends PDOStatement 
+{ 
+	public function __construct() {}
+}

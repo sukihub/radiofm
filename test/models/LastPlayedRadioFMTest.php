@@ -9,8 +9,7 @@ class LastPlayedRadioFMTest extends \TestCase
 {
 	public function setUp()
 	{
-		$this->db = $this->getMock('mysqli');
-		
+		$this->db = $this->getMock('MockPDO');		
 		LastPlayedRadioFM::connect($this->db);
 	}
 
@@ -26,7 +25,7 @@ class LastPlayedRadioFMTest extends \TestCase
 	
 	private function createMockedStatement()
 	{
-		return $this->getMock('mysqli_stmt', [], [], '', false);
+		return $this->getMock('MockPDOStatement');
 	}
 
 	public function testCreateFromResponseShouldPrepareInsertStatement()
@@ -52,15 +51,10 @@ class LastPlayedRadioFMTest extends \TestCase
 			->will($this->returnValue($statement));
 			
 		$statement
-			->expects($this->once())
-			->method('bind_param')
-			->with(
-				'issssss', 
-				$this->response['id'], '2012-06-17 18:21:58', 
-				$this->response['artist'], $this->response['album'], $this->response['song'],
-				$this->response['cover'], $this->response['program']
-			);
-			
+			->expects($this->at(0))
+			->method('bindParam')
+			->with(':radiofm_id', $this->response['id'], \PDO::PARAM_INT);
+		
 		$statement
 			->expects($this->once())
 			->method('execute');
@@ -68,42 +62,81 @@ class LastPlayedRadioFMTest extends \TestCase
 		LastPlayedRadioFM::createFromResponse($this->response);
 	}
 	
-	private function createMockedResult()
+	private function createMockedResult($rowCount)
 	{
-		return $this->getMock('mysqli_result', [], [], '', false);
+		$statement = $this->getMock('MockPDOStatement');
+		
+		$statement
+			->expects($this->any())
+			->method('rowCount')
+			->will($this->returnValue($rowCount));
+			
+		return $statement;
 	}
 	
-	//public function testLastShouldQueryLastRow()
-	//{
-	//	$result = $this->createMockedResult();
-	//
-	//	$this->db
-	//		->expects($this->once())
-	//		->method('query')
-	//		->with($this->matchesQuery('select', 'last_played_radiofm', 'order by id desc', 'limit 1'))
-	//		->will($this->returnValue($result));
-	//
-	//	$last = LastPlayedRadioFM::last();
-	//}
+	public function testLastShouldQueryLastRow()
+	{
+		$result = $this->createMockedResult(1);
 	
-	///**
-	// * @expectedExceptionMessage 1 row was expected, 2 fetched
-	// */
-	//public function testLastShouldThrowExceptionIfZeroOrMultipleRowsAreFetched()
-	//{
-	//	$result = $this->createMockedResult();
-	//		
-	//	$this->db
-	//		->expects($this->once())
-	//		->method('query')
-	//		->will($this->returnValue($result));
-	//	
-	//	//$result
-	//	//	->expects($this->at(0))
-	//	//	->method('__get')
-	//	//	->with('num_rows')
-	//	//	->will($this->returnValue(2));
-	//
-	//	$last = LastPlayedRadioFM::last();
-	//}
+		$this->db
+			->expects($this->once())
+			->method('query')
+			->with($this->matchesQuery('select', 'last_played_radiofm', 'order by id desc', 'limit 1'))
+			->will($this->returnValue($result));
+	
+		$last = LastPlayedRadioFM::last();
+	}
+	
+	/**
+	 * @expectedException Models\LastPlayedException
+	 * @expectedExceptionMessage 1 row was expected, 0 fetched
+	 */
+	public function testLastShouldThrowExceptionIfZeroRowsAreFetched()
+	{
+		$result = $this->createMockedResult(0);
+			
+		$this->db
+			->expects($this->once())
+			->method('query')
+			->will($this->returnValue($result));
+			
+		$last = LastPlayedRadioFM::last();
+	}
+	
+	/**
+	 * @expectedException Models\LastPlayedException
+	 * @expectedExceptionMessage 1 row was expected, 2 fetched
+	 */
+	public function testLastShouldThrowExceptionIfTwoRowsAreFetched()
+	{
+		$result = $this->createMockedResult(2);
+			
+		$this->db
+			->expects($this->once())
+			->method('query')
+			->will($this->returnValue($result));
+			
+		$last = LastPlayedRadioFM::last();
+	}
+	
+	public function testLastShouldReturnDatabaseRow()
+	{
+		$result = $this->createMockedResult(1);
+		
+		$this->db
+			->expects($this->once())
+			->method('query')
+			->will($this->returnValue($result));
+		
+		$row = [ 'id' => 5, 'radiofm_id' => 15654, 'song' => 'Itchin on a photograph' ];
+			
+		$result
+			->expects($this->once())
+			->method('fetch')
+			->will($this->returnValue($row));
+		
+		$last = LastPlayedRadioFM::last();
+		
+		$this->assertEquals($row, $last);	
+	}
 }
