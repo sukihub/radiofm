@@ -1,5 +1,11 @@
 <?php
 
+set_include_path(get_include_path() . PATH_SEPARATOR . $_SERVER['DOCUMENT_ROOT']);
+date_default_timezone_set('Europe/Bratislava');
+
+require_once 'lib/helpers/HttpExceptions.php';
+require_once 'lib/helpers/Testable.php';
+
 class Resources
 {
 	private static $db = null;
@@ -9,8 +15,8 @@ class Resources
 		if (self::$db !== null) return self::$db;
 		
 		self::$db = new PDO(
-			"mysql:unix_socket=/tmp/mysql51.sock;dbname=uvidime",
-			'meno',	'heslo'
+			"mysql:unix_socket=/tmp/mysql51.sock;dbname=now_playing",
+			'now_playing',	':odguvbej1'
 		);
 		
 		return self::$db;
@@ -35,7 +41,7 @@ class Router
 	{
 		parse_str(file_get_contents('php://input'), $_REQUEST);
 		
-		$fragments = explode('/', $_REQEST['path']);
+		$fragments = explode('/', $path);
 		
 		$serviceName = ucfirst($fragments[0]);
 		$method = strtolower($_SERVER['REQUEST_METHOD']);
@@ -43,7 +49,9 @@ class Router
 		$serviceFile = "services/$serviceName.php";
 		$serviceClass = "\\Services\\$serviceName";
 		
-		if (!file_exists($serviceFile)) throw new NotFoundException("Service '$serviceName' does not exist");
+		if (!file_exists($_SERVER['DOCUMENT_ROOT'] . '/' . $serviceFile)) throw new NotFoundException("Service file '$serviceName' does not exist");
+		require_once $serviceFile;
+		
 		if (!class_exists($serviceClass)) throw new NotFoundException("Service '$serviceName' does not exist");
 		
 		$action = isset($_REQUEST['id']) ? "item_$method" : "collection_$method";
@@ -55,8 +63,6 @@ class Router
 		echo $service->$action();
 	}
 }
-
-date_default_timezone_set('Europe/Bratislava');
 
 try
 {

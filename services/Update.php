@@ -16,8 +16,19 @@ class Update
 			
 		$last = $this->mc->get(self::$KEY);
 		
-		if ($last === false) $now = $NowPlaying::get();
-		else $now = $NowPlaying::get($last);
+		if ($last === false) 
+		{
+			try
+			{
+				$last = $LastPlayed::last();
+			}
+			catch (LastPlayedException $e)
+			{
+				$last = null;
+			}				
+		}
+		
+		$now = $NowPlaying::get($last);
 		
 		if ($now == $last) return;
 		
@@ -29,6 +40,8 @@ class Update
 	{
 		$this->db = $db;
 		$this->mc = $mc;
+		
+		\Models\LastPlayedRadioFM::connect($db);
 	}
 	
 	public static $LastPlayed = '\Models\LastPlayedRadioFM';

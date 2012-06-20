@@ -87,6 +87,19 @@ class LastPlayedRadioFMTest extends \TestCase
 		$last = LastPlayedRadioFM::last();
 	}
 	
+	public function testLastShouldQueryInNowPlayingFormat()
+	{
+		$result = $this->createMockedResult(1);
+	
+		$this->db
+			->expects($this->once())
+			->method('query')
+			->with($this->matchesQuery('select', 'radiofm_id AS id', 'UNIX_TIMESTAMP(played_at) as time_unix', 'artist, album, song, cover, program'))
+			->will($this->returnValue($result));
+	
+		$last = LastPlayedRadioFM::last();
+	}
+	
 	/**
 	 * @expectedException Models\LastPlayedException
 	 * @expectedExceptionMessage 1 row was expected, 0 fetched
@@ -128,7 +141,7 @@ class LastPlayedRadioFMTest extends \TestCase
 			->method('query')
 			->will($this->returnValue($result));
 		
-		$row = [ 'id' => 5, 'radiofm_id' => 15654, 'song' => 'Itchin on a photograph' ];
+		$row = [ 'id' => 5, 'time_unix' => 15654, 'song' => 'Itchin on a photograph' ];
 			
 		$result
 			->expects($this->once())

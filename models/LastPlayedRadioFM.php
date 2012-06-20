@@ -32,7 +32,8 @@ class LastPlayedRadioFM
 	public static function last()
 	{
 		$statement = self::$db->query(
-			"SELECT * FROM last_played_radiofm ORDER BY id DESC LIMIT 1"
+			"SELECT radiofm_id AS id, UNIX_TIMESTAMP(played_at) as time_unix, artist, album, song, cover, program 
+			 FROM last_played_radiofm ORDER BY id DESC LIMIT 1"
 		);
 		
 		$rowCount = $statement->rowCount();

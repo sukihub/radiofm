@@ -4,13 +4,15 @@ DirectorySlash Off
 Order deny,allow
 Allow from all
 
+# utf-8
+php_value default_charset utf-8
+
+# supress php errors
+php_value display_startup_errors 0
+php_value display_errors 0
+php_value html_errors 0
+
 RewriteEngine on
 
 RewriteCond %{REQUEST_URI} !^/(radiofm/){0,1}public
 RewriteRule ^(.*)$ public/router.php?path=$1 [L,QSA]
-
-<IfModule mod_php5.c>
-  php_flag display_errors Off
-  php_flag log_errors On
-  php_value error_log log/php_errors.log
-</IfModule>

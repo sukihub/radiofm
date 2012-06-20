@@ -45,19 +45,7 @@ class UpdateTest extends \TestCase
 			
 		$this->service->collection_get();
 	}
-		
-	//public function testCollectionGetShouldGetLastResultFromDatabaseIfMemcacheIsEmpty() 
-	//{
-	//	$this->setupMemcache('last', false);
-	//	
-	//	$this->lastPlayed
-	//		::staticExpects($this->once())
-	//		->method('last')
-	//		->will($this->returnValue( [ 'radiofm_id' => 154 ] ));
-	//		
-	//	$this->service->collection_get();		
-	//}
-	
+			
 	public function testCollectionGetShouldCallNowPlayingWithNoLastResultIfNotInMemcache() 
 	{
 		$this->setupMemcache('last', false);
@@ -81,8 +69,8 @@ class UpdateTest extends \TestCase
 			->with($last);
 			
 		$this->service->collection_get();
-	}	
-		
+	}
+			
 	public function testCollectionGetShouldInsertNewSongIntoMemcacheIfNowAndLastAreNotSame()
 	{
 		$now = [ 'id' => 15654, 'time_unix' => 68798 ];
@@ -139,6 +127,73 @@ class UpdateTest extends \TestCase
 		$lp::staticExpects($this->never())
 			->method('createFromResponse');
 			
+		$this->service->collection_get();
+	}
+	
+	private function setupDbLast($last)
+	{
+		$lp = $this->lastPlayed;
+		$lp::staticExpects($this->once())
+			->method('last')
+			->will($this->returnValue($last));
+	}
+	
+	public function testCollectionGetShouldGetLastResultFromDatabaseIfMemcacheIsEmpty() 
+	{
+		$this->setupMemcache('last', false);
+		$this->setupDbLast([ 'radiofm_id' => 154 ]);		
+			
+		$this->service->collection_get();		
+	}
+	
+	public function testCollectionGetShouldCallNowPlayingWithLastResultIfInDb() 
+	{
+		$last = [ 'id' => 15654, 'time_unix' => 68798 ];
+		
+		$this->setupMemcache('last', false);
+		$this->setupDbLast($last);
+		
+		$np = $this->nowPlaying;
+		$np::staticExpects($this->once())
+			->method('get')
+			->with($last);
+			
+		$this->service->collection_get();
+	}	
+	
+	public function testCollectionGetShouldDoNothingIfNowAndLastFromDbAreSame()
+	{
+		$last = [ 'id' => 15654, 'time_unix' => 68798 ];
+	
+		$this->setupMemcache('last', false);
+		$this->setupDbLast($last);
+	
+		$np = $this->nowPlaying;
+		$np::staticExpects($this->once())
+			->method('get')
+			->will($this->returnValue($last));
+	
+		$this->mc
+			->expects($this->never())
+			->method('set');
+			
+		$lp = $this->lastPlayed;
+		$lp::staticExpects($this->never())
+			->method('createFromResponse');
+			
+		$this->service->collection_get();
+	} 
+	
+	public function testCollectionGetShouldNotLoadLastFromDbIfFoundInMemcache()
+	{
+		$last = [ 'id' => 15654, 'time_unix' => 68798 ];
+	
+		$this->setupMemcache('last', $last);
+		
+		$lp = $this->lastPlayed;
+		$lp::staticExpects($this->never())
+			->method('last');
+		
 		$this->service->collection_get();
 	}
 }
