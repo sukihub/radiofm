@@ -1,0 +1,16 @@
+Options -Indexes 
+DirectorySlash Off
+
+Order deny,allow
+Allow from all
+
+RewriteEngine on
+
+RewriteCond %{REQUEST_URI} !^/(radiofm/){0,1}public
+RewriteRule ^(.*)$ public/router.php?path=$1 [L,QSA]
+
+<IfModule mod_php5.c>
+  php_flag display_errors Off
+  php_flag log_errors On
+  php_value error_log log/php_errors.log
+</IfModule>
